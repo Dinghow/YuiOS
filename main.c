@@ -26,7 +26,7 @@ Forrest Yu, 2005
 *****************************************************************************/
 
 char currentUser[128] = "/";
-char currentFolder[128] = "/";
+char currentFolder[128] = "|";
 char filepath[128] = "";
 char users[2][128] = { "empty", "empty" };
 char passwords[2][128];
@@ -439,7 +439,7 @@ void shabby_shell(const char* tty_name){
 					clearArr(filepath, 128);
 				}
 				else if(strcmp(cmd, "mkdir") == 0){
-					createFilepath(arg1 + "*");
+					createFilepath(strcat(arg1,"*"));
 					createFolder(filepath, 1);
 					clearArr(filepath, 128);
 				}
@@ -605,18 +605,16 @@ void createFilepath(char* filename)
 	{
 		filepath[i] = currentUser[i];
 	}
-	filepath[i] = '_';
-	i++;
 
 	for (j; j < strlen(currentFolder); i++, j++) {
 		filepath[i] = currentFolder[j];
 	}
 
-	for(k = 0; j < strlen(filename); i++, k++)
+	for(k = 0; k < strlen(filename); i++, k++)
 	{	
 		filepath[i] = filename[k];
 	}
-	filepath[k] = '\0';
+	filepath[i] = '\0';
 }
 
 	/* Update FileLogs */
@@ -708,7 +706,7 @@ void addLog(char * filepath)
 		char filename[128];
 		while (k < strlen(filepath))
 		{
-			if (filepath[k] != '_')
+			if (filepath[k] != '|')
 				k++;
 			else
 				break;
@@ -1015,19 +1013,23 @@ void openFolder(char* filepath,char* filename)
 		int i = strlen(currentFolder) - 1,j;
 
 		currentFolder[i] = '\0';
-		for (j = i; j >= 0; j--) 
+		for (j = i-1; j >= 0; j--) 
 		{
-			if (currentFolder[j] == '/');
+			if (currentFolder[j] == '|')
 				break;
 		}
+		j++;
 		for (j; j < i; j++) 
 		{
 			currentFolder[j] = '\0';
 		}
+		printf("%s\n",currentFolder);
+		return;
 	}
 
+	int name_length = strlen(filename);
 	//Check if it is a folder
-	if (strrchr(filename, '*') == NULL)
+	if (filename[name_length-1] != '*')
 		return;
 	
 	int i = 0,j = 0;
@@ -1037,12 +1039,13 @@ void openFolder(char* filepath,char* filename)
 		if (currentFolder[i] == '\0')
 			break;
 	}
-	i++;
-	for (j = 0; j < strlen(filename); j++,i++) {
+
+	for (j = 0; j < strlen(filename); j++,i++)
+	{
 		currentFolder[i] = filename[j];
 	}
-	currentFolder[j++] = '/';
-	currentFolder[j] = '\0';
+	currentFolder[i++] = '|';
+	currentFolder[i] = '\0';
 }
 
 /* Read File */
@@ -1325,6 +1328,73 @@ void moveUser(char * username, char * password)
 		printf("Permission Deny!");	
 }
 
+/* Compare the file path to current directory */
+void pathCompare(char* temp)
+{
+	char current_temp[256];
+	char filename_only[64];
+	int i = 0,j = 0,k = 0;
+	int flag =1;
+
+	for(i;i < strlen(currentFolder);i++)
+	{
+		current_temp[i] = currentFolder[i + 1];	
+	}
+	
+	for(j;j < strlen(current_temp);j++)
+	{
+		if(current_temp[j] != temp[j])
+		{
+			flag = 0;
+			break;
+		}	
+	}
+	if(flag == 1)
+	{
+		for(j; j < strlen(temp);j++,k++)
+		{
+			filename_only[k] = temp[j];
+		}
+		filename_only[k] = '\0';
+
+		printf("%s\n",filename_only);	
+	}
+}
+
+/* split path */
+void pathFilter(char* bufr)
+{
+	char *p,*q;
+	char temp[128];
+	int length = 0;
+	p = bufr;
+	q = p;
+	while(1)
+	{
+		while(*q != ' ' && *q != '\0')
+		{
+			q++;												
+		}
+		if(*q == '\0')
+			return;
+		else
+		{
+			*q = '\0';
+			length = q - p;
+			int i = 0;
+			for(i;i < length; i++,p++)
+			{
+				temp[i] = *p;
+			}
+			temp[i] = '\0';
+			//printf("temp=%s\n",temp);
+			pathCompare(temp);
+			q++;
+			p = q;
+		}
+	}
+}
+
 /* Ls */
 void ls()
 {
@@ -1338,7 +1408,8 @@ void ls()
 			printf("empty\n");
 		}
 		n = read(fd, bufr, 1024);
-		printf("%s\n", bufr);
+		pathFilter(bufr);												
+		//printf("%s\n", bufr);
 		close(fd);
 	}
 	else if(strcmp(currentUser, users[1]) == 0)
