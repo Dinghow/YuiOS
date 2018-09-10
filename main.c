@@ -26,6 +26,7 @@ Forrest Yu, 2005
 *****************************************************************************/
 
 char currentUser[128] = "/";
+char currentFolder[128] = "/";
 char filepath[128] = "";
 char users[2][128] = { "empty", "empty" };
 char passwords[2][128];
@@ -273,24 +274,6 @@ PUBLIC void clear()
 		printf("\n");
 }
 
-/*PUBLIC void clear() {
-int i = 0;
-disp_pos = 0;
-for(i=0;i<3000;i++){
-disp_str(" ");
-}
-disp_pos = 0;
-//printf("%d",console_table[current_console].cursor);
-printf("%d",console_table[current_console].crtc_start);
-console_table[current_console].crtc_start = 0;
-console_table[current_console].cursor = 0;
-printf(" %d",current_console);
-
-clear_screen(0,console_table[current_console].cursor);
-console_table[current_console].crtc_start = 0;
-console_table[current_console].cursor = 0;
-}*/
-
 void shabby_shell(const char* tty_name){
 	int fd_stdin  = open(tty_name, O_RDWR);
 	assert(fd_stdin  == 0);
@@ -356,9 +339,9 @@ void shabby_shell(const char* tty_name){
 		clearArr(arg2, 128);
 		clearArr(buf, 1024);
 		if(UserState == 3)
-			printf("[Admin@YuiOS]%s# ",currentUser);
+			printf("[Admin@YuiOS]%s%s# ",currentUser,currentFolder);
 		else
-			printf("[%s@YuiOS]/%s$ ",users[UserState-1],currentUser);
+			printf("[%s@YuiOS]/%s%s$ ",users[UserState-1],currentUser,currentFolder);
 		//write(1, "$ ", 2);
 		int r = read(0, rdbuf, 70);
 		rdbuf[r] = 0;
@@ -444,7 +427,7 @@ void shabby_shell(const char* tty_name){
 				else if(strcmp(cmd, "adduser") == 0){
 					addUser(arg1,arg2);
 				}
-				else if(strcmp(cmd, "userdel") == 0){
+				else if(strcmp(cmd, "deluser") == 0){
 					moveUser(arg1,arg2);
 				}
 				else if(strcmp(cmd, "su") == 0){
@@ -454,11 +437,16 @@ void shabby_shell(const char* tty_name){
 					createFilepath(arg1);
 					createFile(filepath, arg2, 1);
 					clearArr(filepath, 128);
-
 				}
 				else if(strcmp(cmd, "mkdir") == 0){
-					
-				}	
+					createFilepath(arg1 + "*");
+					createFolder(filepath, 1);
+					clearArr(filepath, 128);
+				}
+				else if (strcmp(cmd, "cd") == 0) {
+					createFilepath(arg1);
+					openFolder(filepath,arg1);
+				}
 				else if(strcmp(cmd, "rd") == 0)
 				{
 					createFilepath(arg1);
@@ -609,19 +597,24 @@ int vertify()
 }
 
 	/* Create Filepath */
-void createFilepath(char * filename)
+void createFilepath(char* filename)
 {
-	int k = 0, j = 0;
+	int i = 0, j = 0, k = 0;
 		
-	for (k = 0; k < len(currentUser); k++)
+	for (i; i < len(currentUser); i++)
 	{
-		filepath[k] = currentUser[k];
+		filepath[i] = currentUser[i];
 	}
-	filepath[k] = '_';
-	k++;
-	for(j = 0; j < strlen(filename); j++, k++)
+	filepath[i] = '_';
+	i++;
+
+	for (j; j < strlen(currentFolder); i++, j++) {
+		filepath[i] = currentFolder[j];
+	}
+
+	for(k = 0; j < strlen(filename); i++, k++)
 	{	
-		filepath[k] = filename[j];
+		filepath[i] = filename[k];
 	}
 	filepath[k] = '\0';
 }
@@ -769,15 +762,17 @@ void showhelp(){
 	printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
 	printf("| help                           | show help table                |\n");
 	printf("| sudo                           | obtain administrator privileges|\n");
-	printf("| add      [username] [password] | add user                       |\n");
-	printf("| move     [username] [password] | remove user                    |\n");
-	printf("| su [username] [password] | shift to user                  |\n");
+	printf("| adduse   [username] [password] | add user                       |\n");
+	printf("| deluser  [username] [password] | remove user                    |\n");
+	printf("| su       [username] [password] | shift to user                  |\n");
 	printf("| ls                             | show file list                 |\n");
-	printf("| read     [filename]            | read file                      |\n");
-	printf("| create   [filename] [content]  | create file                    |\n");
-	printf("| edit+    [filename] [content]  | edit file, append content      |\n");
-	printf("| edit     [filename] [content]  | edit file, cover content       |\n");
-	printf("| delete   [filename]            | delete file                    |\n");
+	printf("| mkdir    [foldername]          | create folder                  |\n");
+	printf("| cd       [foldername]          | open folder                    |\n");
+	printf("| rd       [filename]            | read file                      |\n");
+	printf("| mkfile   [filename] [content]  | create file                    |\n");
+	printf("| wt  +    [filename] [content]  | edit file, append content      |\n");
+	printf("| wt       [filename] [content]  | edit file, cover content       |\n");
+	printf("| del      [filename]            | delete file                    |\n");
 	printf("| proc                           | show running process table     |\n");
 	printf("| kill     [proc.no]             | kill process                   |\n");
 	printf("| pause    [proc.no]             | pause process                  |\n");
@@ -787,6 +782,13 @@ void showhelp(){
 
 }
 
+
+/*Init the currentFold array*/
+void initFolder() {
+	for (int i = 1; i < 128; i++) {
+		currentFolder[i] = '\0';
+	}
+}
 
 /* Init FS */
 void initFs()
@@ -799,6 +801,7 @@ void initFs()
 	for (i = 0; i < 500; i++)
 		filequeue[i] = 1;
 
+	initFolder();
 	fd = open("myUsers", O_RDWR);
 	close(fd);
 	fd = open("myUsersPassword", O_RDWR);
@@ -935,8 +938,40 @@ void initFs()
 	filecount = count - empty;
 }
 
-/* Create File */
-void createFile(char * filepath, char * buf, int flag)
+/*Create folder*/
+void createFolder(char* filepath,int flag) {
+	int fd = -1, i = 0, pos;
+	pos = getPos();
+	char f[7];
+	strcpy(f, "empty");
+	f[5] = '0' + pos;
+	f[6] = '\0';
+	if (strcmp(files[pos], f) == 0 && flag == 1)
+	{
+		unlink(files[pos]);
+	}
+
+	fd = open(filepath, O_CREAT | O_RDWR);
+	printf("folder name: %s \n", filepath);
+	if (fd == -1)
+	{
+		printf("Operation failed, please check the path and try again!\n");
+		return;
+	}
+	if (fd == -2)
+	{
+		printf("Operation failed, file already exists!\n");
+		return;
+	}
+	close(fd);
+
+	/* add log */
+	if (flag == 1)
+		addLog(filepath);
+}
+
+/* Create file */
+void createFile(char* filepath, char * buf, int flag)
 {
 	int fd = -1, i = 0, pos;	
 	pos = getPos();
@@ -967,13 +1002,51 @@ void createFile(char * filepath, char * buf, int flag)
 	
 	/* add log */
 	if (flag == 1)
-		addLog(filepath);
-		
+		addLog(filepath);	
 }
 
 
+/*Get into the fold*/
+void openFolder(char* filepath,char* filename)
+{
+	//Check if it is a back father path command
+	if (strcmp(filename, "..") == 0) 
+	{	
+		int i = strlen(currentFolder) - 1,j;
+
+		currentFolder[i] = '\0';
+		for (j = i; j >= 0; j--) 
+		{
+			if (currentFolder[j] == '/');
+				break;
+		}
+		for (j; j < i; j++) 
+		{
+			currentFolder[j] = '\0';
+		}
+	}
+
+	//Check if it is a folder
+	if (strrchr(filename, '*') == NULL)
+		return;
+	
+	int i = 0,j = 0;
+
+	for (i; i < 128; i++)
+	{
+		if (currentFolder[i] == '\0')
+			break;
+	}
+	i++;
+	for (j = 0; j < strlen(filename); j++,i++) {
+		currentFolder[i] = filename[j];
+	}
+	currentFolder[j++] = '/';
+	currentFolder[j] = '\0';
+}
+
 /* Read File */
-void readFile(char * filepath)
+void readFile(char* filepath)
 {
 	if (vertify() == 0)
 		return;
@@ -1030,7 +1103,6 @@ void editAppand(char * filepath, char * buf)
 /* Edit File Cover */
 void editCover(char * filepath, char * buf)
 {
-	
 	if (vertify() == 0)
 		return;
 
