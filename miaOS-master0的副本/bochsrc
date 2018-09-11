@@ -6,8 +6,8 @@
 megs: 32
 
 # filename of ROM images
-romimage: file=/home/ubuntu32/Downloads/bochs-2.6.8/bios/BIOS-bochs-latest
-vgaromimage: file=/home/ubuntu32/Downloads/bochs-2.6.8/bios/VGABIOS-lgpl-latest
+romimage: file=/home/dinghow/Downloads/bochs-2.6.7/bios/BIOS-bochs-latest
+vgaromimage: file=/home/dinghow/Downloads/bochs-2.6.7/bios/VGABIOS-lgpl-latest
 
 # what disk images will be used
 floppya: 1_44=a.img, status=inserted
@@ -31,5 +31,4 @@ boot: a
 mouse: enabled=0
 
 # enable key mapping, using US layout as default.
-# keyboard_mapping: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
-keyboard:keymap=/usr/local/share/bochs/keymaps/x11-pc-us.map
+keyboard: keymap=/home/dinghow/Downloads/bochs-2.6.7/gui/keymaps/x11-pc-us.map

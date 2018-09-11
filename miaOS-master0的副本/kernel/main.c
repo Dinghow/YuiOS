@@ -361,9 +361,9 @@ void shabby_shell(const char *tty_name)
         clearArr(arg2, 128);
         clearArr(buf, 1024);
 	if(UserState == 3)
-		printf("[Admin@YuiOS]%s# ",currentUser);
+		printf("[Admin@YuiOS]%s%s# ",currentUser,currentFolder);
 	else	
-		printf("[%s@YuiOS]/%s$ ",users[UserState-1],currentUser);
+		printf("[%s@YuiOS]/%s%s$ ",users[UserState-1],currentUser,currentFolder);
         //write(1, "$ ", 2);
         int r = read(0, rdbuf, 70);
         rdbuf[r] = 0;
