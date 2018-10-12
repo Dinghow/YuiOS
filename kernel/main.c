@@ -605,6 +605,8 @@ void clearArr(char *arr, int length)
 File system
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Dinghow Yang, 2018
+Attention!Out muti-class file system is basd on string matching actually
+, so you can rewrite a real one by yourself =。=
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /* Get File Pos */
